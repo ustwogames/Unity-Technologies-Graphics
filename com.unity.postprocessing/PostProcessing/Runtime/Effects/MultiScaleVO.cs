@@ -64,6 +64,11 @@ namespace UnityEngine.Rendering.PostProcessing
             m_Settings = settings;
         }
 
+        public RenderTexture GetResultTexture()
+        {
+            return m_AmbientOnlyAO;
+        }
+
         public DepthTextureMode GetCameraFlags()
         {
             return DepthTextureMode.Depth;
