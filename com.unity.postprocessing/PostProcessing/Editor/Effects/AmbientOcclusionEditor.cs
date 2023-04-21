@@ -9,6 +9,7 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedParameterOverride m_Mode;
         SerializedParameterOverride m_Intensity;
         SerializedParameterOverride m_Color;
+        SerializedParameterOverride m_RenderBeforeOpaqueOnly;
         SerializedParameterOverride m_AmbientOnly;
         SerializedParameterOverride m_ThicknessModifier;
         SerializedParameterOverride m_DirectLightingStrength;
@@ -20,6 +21,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_Mode = FindParameterOverride(x => x.mode);
             m_Intensity = FindParameterOverride(x => x.intensity);
             m_Color = FindParameterOverride(x => x.color);
+            m_RenderBeforeOpaqueOnly = FindParameterOverride(x => x.renderBeforeOpaqueOnly);
             m_AmbientOnly = FindParameterOverride(x => x.ambientOnly);
             m_ThicknessModifier = FindParameterOverride(x => x.thicknessModifier);
             m_DirectLightingStrength = FindParameterOverride(x => x.directLightingStrength);
@@ -57,6 +59,7 @@ namespace UnityEditor.Rendering.PostProcessing
             }
 
             PropertyField(m_Color);
+            PropertyField(m_RenderBeforeOpaqueOnly);
             PropertyField(m_AmbientOnly);
 
             if (m_AmbientOnly.overrideState.boolValue && m_AmbientOnly.value.boolValue && !RuntimeUtilities.scriptableRenderPipelineActive)

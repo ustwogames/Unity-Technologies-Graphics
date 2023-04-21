@@ -17,6 +17,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         internal static readonly int AOParams = Shader.PropertyToID("_AOParams");
         internal static readonly int AOColor = Shader.PropertyToID("_AOColor");
+        internal static readonly int AmbientOcclusionTexture = Shader.PropertyToID("_AmbientOcclusionTexture");
         internal static readonly int OcclusionTexture1 = Shader.PropertyToID("_OcclusionTexture1");
         internal static readonly int OcclusionTexture2 = Shader.PropertyToID("_OcclusionTexture2");
         internal static readonly int SAOcclusionTexture = Shader.PropertyToID("_SAOcclusionTexture");
