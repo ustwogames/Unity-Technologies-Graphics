@@ -144,17 +144,32 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.ReleaseTemporaryRT(id);
         }
 
-        // Calculate values in _ZBuferParams (built-in shader variable)
-        // We can't use _ZBufferParams in compute shaders, so this function is
-        // used to give the values in it to compute shaders.
+        Vector4 CalculateProjectionParams(Camera camera)
+        {
+            bool flipped = SystemInfo.graphicsUVStartsAtTop;
+            return new Vector4(flipped ? -1.0f : 1.0f, camera.nearClipPlane, camera.farClipPlane, 1.0f / camera.farClipPlane);
+        }
+
+        Vector4 CalculateOrthoParams(Camera camera)
+        {
+            float height = 2.0f * camera.orthographicSize;
+            float width = height * camera.aspect;
+            return new Vector4(width, height, 0.0f, camera.orthographic ? 1.0f : 0.0f);
+        }
+
         Vector4 CalculateZBufferParams(Camera camera)
         {
             float fpn = camera.farClipPlane / camera.nearClipPlane;
 
+            float x = 1f - fpn;
+            float y = fpn;
             if (SystemInfo.usesReversedZBuffer)
-                return new Vector4(fpn - 1f, 1f, 0f, 0f);
+            {
+                x = fpn - 1f;
+                y = 1f;
+            }
 
-            return new Vector4(1f - fpn, fpn, 0f, 0f);
+            return new Vector4(x, y, x / camera.farClipPlane, y / camera.farClipPlane);
         }
 
         float CalculateTanHalfFovHeight(Camera camera)
@@ -299,6 +314,8 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.SetComputeTextureParam(cs, kernel, "DS4x", ShaderIDs.LowDepth2);
             cmd.SetComputeTextureParam(cs, kernel, "DS2xAtlas", ShaderIDs.TiledDepth1);
             cmd.SetComputeTextureParam(cs, kernel, "DS4xAtlas", ShaderIDs.TiledDepth2);
+            cmd.SetComputeVectorParam(cs, "ProjectionParams", CalculateProjectionParams(camera));
+            cmd.SetComputeVectorParam(cs, "OrthoParams", CalculateOrthoParams(camera));
             cmd.SetComputeVectorParam(cs, "ZBufferParams", CalculateZBufferParams(camera));
             cmd.SetComputeTextureParam(cs, kernel, "Depth", depthMapId);
 
