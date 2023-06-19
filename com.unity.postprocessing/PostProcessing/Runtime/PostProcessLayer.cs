@@ -193,6 +193,7 @@ namespace UnityEngine.Rendering.PostProcessing
         Dictionary<Type, PostProcessBundle> m_Bundles;
 
         PropertySheetFactory m_PropertySheetFactory;
+        CommandBuffer m_LegacyCmdBufferBeforeForwardOpaque;
         CommandBuffer m_LegacyCmdBufferBeforeReflections;
         CommandBuffer m_LegacyCmdBufferBeforeLighting;
         CommandBuffer m_LegacyCmdBufferOpaque;
@@ -234,9 +235,10 @@ namespace UnityEngine.Rendering.PostProcessing
 
         void InitLegacy()
         {
-            m_LegacyCmdBufferBeforeReflections = new CommandBuffer { name = "Deferred Ambient Occlusion" };
-            m_LegacyCmdBufferBeforeLighting = new CommandBuffer { name = "Deferred Ambient Occlusion" };
-            m_LegacyCmdBufferOpaque = new CommandBuffer { name = "Opaque Only Post-processing" };
+            m_LegacyCmdBufferBeforeForwardOpaque = new CommandBuffer() { name = "Ambient Occlusion Forward (Render)" };
+            m_LegacyCmdBufferBeforeReflections = new CommandBuffer { name = "Ambient Occlusion Deferred (Render)" };
+            m_LegacyCmdBufferBeforeLighting = new CommandBuffer { name = "Ambient Occlusion Deferred (Composite)" };
+            m_LegacyCmdBufferOpaque = new CommandBuffer { name = "Post-processing (Opaque Only)" };
             m_LegacyCmdBuffer = new CommandBuffer { name = "Post-processing" };
 
             m_Camera = GetComponent<Camera>();
@@ -245,6 +247,7 @@ namespace UnityEngine.Rendering.PostProcessing
             m_Camera.forceIntoRenderTexture = true; // Needed when running Forward / LDR / No MSAA
 #endif
 
+            m_Camera.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, m_LegacyCmdBufferBeforeForwardOpaque);
             m_Camera.AddCommandBuffer(CameraEvent.BeforeReflections, m_LegacyCmdBufferBeforeReflections);
             m_Camera.AddCommandBuffer(CameraEvent.BeforeLighting, m_LegacyCmdBufferBeforeLighting);
             m_Camera.AddCommandBuffer(CameraEvent.BeforeImageEffectsOpaque, m_LegacyCmdBufferOpaque);
@@ -374,6 +377,8 @@ namespace UnityEngine.Rendering.PostProcessing
             // legacy
             if (m_Camera != null)
             {
+                if (m_LegacyCmdBufferBeforeForwardOpaque != null)
+                    m_Camera.RemoveCommandBuffer(CameraEvent.BeforeForwardOpaque, m_LegacyCmdBufferBeforeForwardOpaque);
                 if (m_LegacyCmdBufferBeforeReflections != null)
                     m_Camera.RemoveCommandBuffer(CameraEvent.BeforeReflections, m_LegacyCmdBufferBeforeReflections);
                 if (m_LegacyCmdBufferBeforeLighting != null)
@@ -550,6 +555,7 @@ namespace UnityEngine.Rendering.PostProcessing
             context.sourceFormat = sourceFormat;
 
             // TODO: Investigate retaining command buffers on XR multi-pass right eye
+            m_LegacyCmdBufferBeforeForwardOpaque.Clear();
             m_LegacyCmdBufferBeforeReflections.Clear();
             m_LegacyCmdBufferBeforeLighting.Clear();
             m_LegacyCmdBufferOpaque.Clear();
@@ -567,6 +573,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var aoRenderer = aoBundle.CastRenderer<AmbientOcclusionRenderer>();
 
             bool aoSupported = aoSettings.IsEnabledAndSupported(context);
+            bool aoRenderBeforeForwardOpaqueOnly = aoRenderer.IsRenderBeforeForwardOpaqueOnly(context);
             bool aoAmbientOnly = aoRenderer.IsAmbientOnly(context);
             bool isAmbientOcclusionDeferred = aoSupported && aoAmbientOnly;
             bool isAmbientOcclusionOpaque = aoSupported && !aoAmbientOnly;
@@ -580,8 +587,19 @@ namespace UnityEngine.Rendering.PostProcessing
             if (context.stereoActive)
                 context.UpdateSinglePassStereoState(context.IsTemporalAntialiasingActive(), aoSupported, isScreenSpaceReflectionsActive);
 #endif
+            if (aoRenderBeforeForwardOpaqueOnly)
+            {
+                CommandBuffer oldCommandBuffer = context.command;
+
+                context.command = m_LegacyCmdBufferBeforeForwardOpaque;
+                aoRenderer.Get().RenderAmbientOnly(context);
+                RenderTexture rt = aoRenderer.Get().GetResultTexture();
+                context.command.SetGlobalTexture(ShaderIDs.AmbientOcclusionTexture, rt);
+
+                context.command = oldCommandBuffer;
+            }
             // Ambient-only AO is a special case and has to be done in separate command buffers
-            if (isAmbientOcclusionDeferred)
+            else if (isAmbientOcclusionDeferred)
             {
                 var ao = aoRenderer.Get();
 

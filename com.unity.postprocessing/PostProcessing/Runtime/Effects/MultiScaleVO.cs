@@ -64,6 +64,11 @@ namespace UnityEngine.Rendering.PostProcessing
             m_Settings = settings;
         }
 
+        public RenderTexture GetResultTexture()
+        {
+            return m_AmbientOnlyAO;
+        }
+
         public DepthTextureMode GetCameraFlags()
         {
             return DepthTextureMode.Depth;
@@ -139,17 +144,32 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.ReleaseTemporaryRT(id);
         }
 
-        // Calculate values in _ZBuferParams (built-in shader variable)
-        // We can't use _ZBufferParams in compute shaders, so this function is
-        // used to give the values in it to compute shaders.
+        Vector4 CalculateProjectionParams(Camera camera)
+        {
+            bool flipped = SystemInfo.graphicsUVStartsAtTop;
+            return new Vector4(flipped ? -1.0f : 1.0f, camera.nearClipPlane, camera.farClipPlane, 1.0f / camera.farClipPlane);
+        }
+
+        Vector4 CalculateOrthoParams(Camera camera)
+        {
+            float height = 2.0f * camera.orthographicSize;
+            float width = height * camera.aspect;
+            return new Vector4(width, height, 0.0f, camera.orthographic ? 1.0f : 0.0f);
+        }
+
         Vector4 CalculateZBufferParams(Camera camera)
         {
             float fpn = camera.farClipPlane / camera.nearClipPlane;
 
+            float x = 1f - fpn;
+            float y = fpn;
             if (SystemInfo.usesReversedZBuffer)
-                return new Vector4(fpn - 1f, 1f, 0f, 0f);
+            {
+                x = fpn - 1f;
+                y = 1f;
+            }
 
-            return new Vector4(1f - fpn, fpn, 0f, 0f);
+            return new Vector4(x, y, x / camera.farClipPlane, y / camera.farClipPlane);
         }
 
         float CalculateTanHalfFovHeight(Camera camera)
@@ -195,10 +215,11 @@ namespace UnityEngine.Rendering.PostProcessing
             PushDownsampleCommands(cmd, camera, depthMap, isMSAA);
 
             float tanHalfFovH = CalculateTanHalfFovHeight(camera);
-            PushRenderCommands(cmd, ShaderIDs.TiledDepth1, ShaderIDs.Occlusion1, GetSizeArray(MipLevel.L3), tanHalfFovH, isMSAA);
-            PushRenderCommands(cmd, ShaderIDs.TiledDepth2, ShaderIDs.Occlusion2, GetSizeArray(MipLevel.L4), tanHalfFovH, isMSAA);
-            PushRenderCommands(cmd, ShaderIDs.TiledDepth3, ShaderIDs.Occlusion3, GetSizeArray(MipLevel.L5), tanHalfFovH, isMSAA);
-            PushRenderCommands(cmd, ShaderIDs.TiledDepth4, ShaderIDs.Occlusion4, GetSizeArray(MipLevel.L6), tanHalfFovH, isMSAA);
+            bool isOrtho = camera.orthographic;
+            PushRenderCommands(cmd, ShaderIDs.TiledDepth1, ShaderIDs.Occlusion1, GetSizeArray(MipLevel.L3), tanHalfFovH, isMSAA, isOrtho);
+            PushRenderCommands(cmd, ShaderIDs.TiledDepth2, ShaderIDs.Occlusion2, GetSizeArray(MipLevel.L4), tanHalfFovH, isMSAA, isOrtho);
+            PushRenderCommands(cmd, ShaderIDs.TiledDepth3, ShaderIDs.Occlusion3, GetSizeArray(MipLevel.L5), tanHalfFovH, isMSAA, isOrtho);
+            PushRenderCommands(cmd, ShaderIDs.TiledDepth4, ShaderIDs.Occlusion4, GetSizeArray(MipLevel.L6), tanHalfFovH, isMSAA, isOrtho);
 
             PushUpsampleCommands(cmd, ShaderIDs.LowDepth4, ShaderIDs.Occlusion4, ShaderIDs.LowDepth3, ShaderIDs.Occlusion3, ShaderIDs.Combined3, GetSize(MipLevel.L4), GetSize(MipLevel.L3), isMSAA);
             PushUpsampleCommands(cmd, ShaderIDs.LowDepth3, ShaderIDs.Combined3, ShaderIDs.LowDepth2, ShaderIDs.Occlusion2, ShaderIDs.Combined2, GetSize(MipLevel.L3), GetSize(MipLevel.L2), isMSAA);
@@ -294,6 +315,8 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.SetComputeTextureParam(cs, kernel, "DS4x", ShaderIDs.LowDepth2);
             cmd.SetComputeTextureParam(cs, kernel, "DS2xAtlas", ShaderIDs.TiledDepth1);
             cmd.SetComputeTextureParam(cs, kernel, "DS4xAtlas", ShaderIDs.TiledDepth2);
+            cmd.SetComputeVectorParam(cs, "ProjectionParams", CalculateProjectionParams(camera));
+            cmd.SetComputeVectorParam(cs, "OrthoParams", CalculateOrthoParams(camera));
             cmd.SetComputeVectorParam(cs, "ZBufferParams", CalculateZBufferParams(camera));
             cmd.SetComputeTextureParam(cs, kernel, "Depth", depthMapId);
 
@@ -315,7 +338,7 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.DispatchCompute(cs, kernel, m_ScaledWidths[(int)MipLevel.L6], m_ScaledHeights[(int)MipLevel.L6], 1);
         }
 
-        void PushRenderCommands(CommandBuffer cmd, int source, int destination, Vector3 sourceSize, float tanHalfFovH, bool isMSAA)
+        void PushRenderCommands(CommandBuffer cmd, int source, int destination, Vector3 sourceSize, float tanHalfFovH, bool isMSAA, bool isOrtho)
         {
             // Here we compute multipliers that convert the center depth value into (the reciprocal
             // of) sphere thicknesses at each sample location. This assumes a maximum sample radius
@@ -333,7 +356,9 @@ namespace UnityEngine.Rendering.PostProcessing
             // TanHalfFovH: Radius of sphere in depth units if its center lies at Z = 1
             // ScreenspaceDiameter: Diameter of sample sphere in pixel units
             // ScreenspaceDiameter / BufferWidth: Ratio of the screen width that the sphere actually covers
-            float thicknessMultiplier = 2f * tanHalfFovH * kScreenspaceDiameter / sourceSize.x;
+            float thicknessMultiplier = isOrtho
+                ? kScreenspaceDiameter / sourceSize.x
+                : 2f * tanHalfFovH * kScreenspaceDiameter / sourceSize.x;
             if (RuntimeUtilities.isSinglePassStereoEnabled)
                 thicknessMultiplier *= 2f;
 

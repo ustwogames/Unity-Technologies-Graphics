@@ -93,6 +93,14 @@ namespace UnityEngine.Rendering.PostProcessing
         public ColorParameter color = new ColorParameter { value = Color.black };
 
         /// <summary>
+        /// Ambient occlusion is rendered before the forward opaque pass. This allows for shaders in forward rendering to
+        /// sample ambient occlusion and decide how it interacts with fog and other custom effects.
+        /// Compositing is bypassed, each shader needs to explicitly sample the global ambient occlusion texture (_AmbientOcclusionTexture).
+        /// </summary>
+        [Tooltip("Check this box to render ambient occlusion before the forward opaque pass.\n\nThis allows for shaders in forward rendering to sample ambient occlusion and decide how it interacts with fog and other custom effects.\n\nCompositing is bypassed, each shader needs to explicitly sample the ambient occlusion texture (_AmbientOcclusionTexture).")]
+        public BoolParameter renderBeforeOpaqueOnly = new BoolParameter { value = false };
+
+        /// <summary>
         /// Only affects ambient lighting. This mode is only available with the Deferred rendering
         /// path and HDR rendering. Objects rendered with the Forward rendering path won't get any
         /// ambient occlusion.
@@ -202,6 +210,7 @@ namespace UnityEngine.Rendering.PostProcessing
     internal interface IAmbientOcclusionMethod
     {
         DepthTextureMode GetCameraFlags();
+        RenderTexture GetResultTexture();
         void RenderAfterOpaque(PostProcessRenderContext context);
         void RenderAmbientOnly(PostProcessRenderContext context);
         void CompositeAmbientOnly(PostProcessRenderContext context);
@@ -223,6 +232,13 @@ namespace UnityEngine.Rendering.PostProcessing
                     new MultiScaleVO(settings),
                 };
             }
+        }
+
+        public bool IsRenderBeforeForwardOpaqueOnly(PostProcessRenderContext context)
+        {
+            var camera = context.camera;
+            return settings.renderBeforeOpaqueOnly.value
+                   && camera.actualRenderingPath == RenderingPath.Forward;
         }
 
         public bool IsAmbientOnly(PostProcessRenderContext context)
