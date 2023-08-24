@@ -125,14 +125,14 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <summary>
         /// The tolerance of the upsampling pass to depth changes.
         /// </summary>
-        [Range(-12f, -1f)]
+        [Range(-12f, 0f)]
         public FloatParameter upsampleTolerance = new FloatParameter { value = -12f }; // Hidden
 
         /// <summary>
         /// Modifies the thickness of occluders. This increases dark areas but also introduces dark
         /// halo around objects.
         /// </summary>
-        [Range(1f, 10f), Tooltip("This modifies the thickness of occluders. It increases the size of dark areas and also introduces a dark halo around objects.")]
+        [Range(0f, 10f), Tooltip("This modifies the thickness of occluders. It increases the size of dark areas and also introduces a dark halo around objects.")]
         public FloatParameter thicknessModifier = new FloatParameter { value = 1f };
 
         // HDRP-only parameters
