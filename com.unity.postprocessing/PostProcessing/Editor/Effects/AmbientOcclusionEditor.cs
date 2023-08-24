@@ -15,6 +15,9 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedParameterOverride m_DirectLightingStrength;
         SerializedParameterOverride m_Quality;
         SerializedParameterOverride m_Radius;
+        SerializedParameterOverride m_NoiseFilterTolerance;
+        SerializedParameterOverride m_BlurTolerance;
+        SerializedParameterOverride m_UpsampleTolerance;
 
         public override void OnEnable()
         {
@@ -27,6 +30,9 @@ namespace UnityEditor.Rendering.PostProcessing
             m_DirectLightingStrength = FindParameterOverride(x => x.directLightingStrength);
             m_Quality = FindParameterOverride(x => x.quality);
             m_Radius = FindParameterOverride(x => x.radius);
+            m_NoiseFilterTolerance = FindParameterOverride(x => x.noiseFilterTolerance);
+            m_BlurTolerance = FindParameterOverride(x => x.blurTolerance);
+            m_UpsampleTolerance = FindParameterOverride(x => x.upsampleTolerance);
         }
 
         public override void OnInspectorGUI()
@@ -61,6 +67,9 @@ namespace UnityEditor.Rendering.PostProcessing
             PropertyField(m_Color);
             PropertyField(m_RenderBeforeOpaqueOnly);
             PropertyField(m_AmbientOnly);
+            PropertyField(m_NoiseFilterTolerance);
+            PropertyField(m_BlurTolerance);
+            PropertyField(m_UpsampleTolerance);
 
             if (m_AmbientOnly.overrideState.boolValue && m_AmbientOnly.value.boolValue && !RuntimeUtilities.scriptableRenderPipelineActive)
                 EditorGUILayout.HelpBox("Ambient-only only works with cameras rendering in Deferred + HDR", MessageType.Info);
