@@ -14,6 +14,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 0 - Occlusion estimation with CameraDepthTexture
         Pass
         {
+            Name "Occlusion estimation with CameraDepthTexture"
             HLSLPROGRAM
 
                 #pragma vertex VertDefault
@@ -29,6 +30,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 1 - Occlusion estimation with G-Buffer
         Pass
         {
+            Name "Occlusion estimation with G-Buffer"
             HLSLPROGRAM
 
                 #pragma vertex VertDefault
@@ -44,6 +46,8 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 2 - Separable blur (horizontal pass) with CameraDepthNormalsTexture
         Pass
         {
+            Name "Separable blur (horizontal pass) with CameraDepthNormalsTexture"
+
             HLSLPROGRAM
 
                 #pragma vertex VertDefault
@@ -59,6 +63,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 3 - Separable blur (horizontal pass) with G-Buffer
         Pass
         {
+            Name "Separable blur (horizontal pass) with G-Buffer"
             HLSLPROGRAM
 
                 #pragma vertex VertDefault
@@ -74,6 +79,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 4 - Separable blur (vertical pass)
         Pass
         {
+            Name "Separable blur (vertical pass)"
             HLSLPROGRAM
 
                 #pragma vertex VertDefault
@@ -87,6 +93,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 5 - Final composition
         Pass
         {
+            Name "Final composition"
             Blend Zero OneMinusSrcColor, Zero OneMinusSrcAlpha
 
             HLSLPROGRAM
@@ -101,6 +108,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 6 - Final composition (ambient only mode)
         Pass
         {
+            Name "Final composition (ambient only mode)"
             Blend Zero OneMinusSrcColor, Zero OneMinusSrcAlpha
 
             HLSLPROGRAM
@@ -115,6 +123,7 @@ Shader "Hidden/PostProcessing/ScalableAO"
         // 7 - Debug overlay
         Pass
         {
+            Name "Debug overlay"
             HLSLPROGRAM
 
                 #pragma vertex VertDefault
