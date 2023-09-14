@@ -596,6 +596,9 @@ namespace UnityEngine.Rendering.PostProcessing
                 RenderTexture rt = aoRenderer.Get().GetResultTexture();
                 context.command.SetGlobalTexture(ShaderIDs.AmbientOcclusionTexture, rt);
 
+                context.userData["AmbientOcclusionTexture"] = rt;
+                context.userData["BeforeForwardOpaqueCommand"] = context.command;
+
                 context.command = oldCommandBuffer;
             }
             // Ambient-only AO is a special case and has to be done in separate command buffers
