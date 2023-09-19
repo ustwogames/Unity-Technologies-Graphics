@@ -51,21 +51,10 @@ namespace UnityEngine.Rendering.PostProcessing
         void OnEnable()
         {
             m_CmdAfterEverything = new CommandBuffer { name = "Post-processing Debug Overlay" };
-
-#if UNITY_EDITOR
-            // Update is only called on object change when ExecuteInEditMode is set, but we need it
-            // to execute on every frame no matter what when not in play mode, so we'll use the
-            // editor update loop instead...
-            UnityEditor.EditorApplication.update += UpdateStates;
-#endif
         }
 
         void OnDisable()
         {
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.update -= UpdateStates;
-#endif
-
             if (m_CurrentCamera != null)
                 m_CurrentCamera.RemoveCommandBuffer(CameraEvent.AfterImageEffects, m_CmdAfterEverything);
 
@@ -73,13 +62,10 @@ namespace UnityEngine.Rendering.PostProcessing
             m_PreviousPostProcessLayer = null;
         }
 
-#if !UNITY_EDITOR
-        void Update()
+        void OnPreCull()
         {
             UpdateStates();
         }
-
-#endif
 
         void Reset()
         {
