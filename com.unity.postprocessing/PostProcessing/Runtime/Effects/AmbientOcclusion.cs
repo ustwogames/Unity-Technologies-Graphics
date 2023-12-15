@@ -108,6 +108,9 @@ namespace UnityEngine.Rendering.PostProcessing
         [Tooltip("Check this box to mark this Volume as to only affect ambient lighting. This mode is only available with the Deferred rendering path and HDR rendering. Objects rendered with the Forward rendering path won't get any ambient occlusion.")]
         public BoolParameter ambientOnly = new BoolParameter { value = true };
 
+        [Range(1, 4)]
+        public IntParameter maxDownsamples = new() { value = 4 };
+
         // MSVO-only parameters
 
         /// <summary>

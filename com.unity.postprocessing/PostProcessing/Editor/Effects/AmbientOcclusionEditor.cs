@@ -11,6 +11,7 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedParameterOverride m_Color;
         SerializedParameterOverride m_RenderBeforeOpaqueOnly;
         SerializedParameterOverride m_AmbientOnly;
+        SerializedParameterOverride m_MaxDownsamples;
         SerializedParameterOverride m_ThicknessModifier;
         SerializedParameterOverride m_DirectLightingStrength;
         SerializedParameterOverride m_Quality;
@@ -26,6 +27,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_Color = FindParameterOverride(x => x.color);
             m_RenderBeforeOpaqueOnly = FindParameterOverride(x => x.renderBeforeOpaqueOnly);
             m_AmbientOnly = FindParameterOverride(x => x.ambientOnly);
+            m_MaxDownsamples = FindParameterOverride(x => x.maxDownsamples);
             m_ThicknessModifier = FindParameterOverride(x => x.thicknessModifier);
             m_DirectLightingStrength = FindParameterOverride(x => x.directLightingStrength);
             m_Quality = FindParameterOverride(x => x.quality);
@@ -67,6 +69,7 @@ namespace UnityEditor.Rendering.PostProcessing
             PropertyField(m_Color);
             PropertyField(m_RenderBeforeOpaqueOnly);
             PropertyField(m_AmbientOnly);
+            PropertyField(m_MaxDownsamples);
             PropertyField(m_NoiseFilterTolerance);
             PropertyField(m_BlurTolerance);
             PropertyField(m_UpsampleTolerance);
