@@ -104,8 +104,16 @@ float CheckBounds(float2 uv, float d)
 // Depth/normal sampling functions
 float SampleDepth(float2 uv)
 {
-    float d = Linear01Depth(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_CameraDepthTexture, UnityStereoTransformScreenSpaceTex(uv), 0));
-    return d * _ProjectionParams.z + CheckBounds(uv, d);
+    float rawDepth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_CameraDepthTexture, UnityStereoTransformScreenSpaceTex(uv), 0);
+    if (unity_OrthoParams.w == 1.0) {
+        #if UNITY_REVERSED_Z
+        rawDepth = 1.0 - rawDepth;
+        #endif
+        return (_ProjectionParams.z - _ProjectionParams.y) * rawDepth + _ProjectionParams.y;
+    } else {
+        float d = Linear01Depth(rawDepth);
+        return d * _ProjectionParams.z + CheckBounds(uv, d);
+    }
 }
 
 float3 SampleNormal(float2 uv)
@@ -338,7 +346,13 @@ float4 FragBlur(VaryingsDefault i) : SV_Target
 
 #endif
 
+#if defined(BLUR_HORIZONTAL)
     return PackAONormal(s, n0);
+#else
+    float4 result = PackAONormal(s, n0);
+    result.r = 1 - result.r;
+    return result;
+#endif
 }
 
 // Gamma encoding (only needed in gamma lighting mode)
@@ -379,12 +393,11 @@ half BlurSmall(TEXTURE2D_ARGS(tex, samp), float2 uv, float2 delta)
 }
 
 // Final composition shader
-float4 FragComposition(VaryingsDefault i) : SV_Target
+float FragComposition(VaryingsDefault i) : SV_Target
 {
     float2 delta = _SAOcclusionTexture_TexelSize.xy / DOWNSAMPLE;
     half ao = BlurSmall(TEXTURE2D_PARAM(_SAOcclusionTexture, sampler_SAOcclusionTexture), i.texcoord, delta);
-    ao = EncodeAO(ao);
-    return float4(ao * _AOColor, ao);
+    return ao;
 }
 
 #if !SHADER_API_GLES // Excluding the MRT pass under GLES2

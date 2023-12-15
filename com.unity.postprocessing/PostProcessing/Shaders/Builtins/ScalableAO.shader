@@ -94,7 +94,6 @@ Shader "Hidden/PostProcessing/ScalableAO"
         Pass
         {
             Name "Final composition"
-            Blend Zero OneMinusSrcColor, Zero OneMinusSrcAlpha
 
             HLSLPROGRAM
 

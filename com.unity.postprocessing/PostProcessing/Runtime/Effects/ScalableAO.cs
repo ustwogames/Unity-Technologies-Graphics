@@ -141,7 +141,7 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.BeginSample("Ambient Occlusion");
             Render(context, cmd, 0);
             cmd.SetGlobalTexture(ShaderIDs.SAOcclusionTexture, m_Result);
-            cmd.BlitFullscreenTriangle(BuiltinRenderTextureType.None, BuiltinRenderTextureType.CameraTarget, m_PropertySheet, (int)Pass.CompositionForward, RenderBufferLoadAction.Load);
+            cmd.BlitFullscreenTriangle(BuiltinRenderTextureType.None, ShaderIDs.SAOcclusionTexture, m_PropertySheet, (int)Pass.CompositionForward, RenderBufferLoadAction.Load);
             cmd.EndSample("Ambient Occlusion");
         }
 
@@ -149,7 +149,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             var cmd = context.command;
             cmd.BeginSample("Ambient Occlusion Render");
-            Render(context, cmd, 1);
+            Render(context, cmd, 0);
             cmd.EndSample("Ambient Occlusion Render");
         }
 
