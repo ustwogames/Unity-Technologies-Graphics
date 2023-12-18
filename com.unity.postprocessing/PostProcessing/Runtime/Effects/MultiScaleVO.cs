@@ -200,11 +200,11 @@ namespace UnityEngine.Rendering.PostProcessing
         public void GenerateAOMap(CommandBuffer cmd, Camera camera, RenderTargetIdentifier destination, RenderTargetIdentifier? depthMap, bool invert, bool isMSAA)
         {
             // Base size
-            m_Widths[0] = m_ScaledWidths[0] = camera.pixelWidth * (RuntimeUtilities.isSinglePassStereoEnabled ? 2 : 1);
-            m_Heights[0] = m_ScaledHeights[0] = camera.pixelHeight;
+            m_Widths[0] = m_ScaledWidths[0] = (camera.pixelWidth / m_Settings.downscale) * (RuntimeUtilities.isSinglePassStereoEnabled ? 2 : 1);
+            m_Heights[0] = m_ScaledHeights[0] = (camera.pixelHeight / m_Settings.downscale);
 #if UNITY_2017_3_OR_NEWER
-            m_ScaledWidths[0] = camera.scaledPixelWidth * (RuntimeUtilities.isSinglePassStereoEnabled ? 2 : 1);
-            m_ScaledHeights[0] = camera.scaledPixelHeight;
+            m_ScaledWidths[0] = (camera.scaledPixelWidth / m_Settings.downscale) * (RuntimeUtilities.isSinglePassStereoEnabled ? 2 : 1);
+            m_ScaledHeights[0] = (camera.scaledPixelHeight / m_Settings.downscale);
 #endif
             float widthScalingFactor = ScalableBufferManager.widthScaleFactor;
             float heightScalingFactor = ScalableBufferManager.heightScaleFactor;
@@ -549,7 +549,10 @@ namespace UnityEngine.Rendering.PostProcessing
 
         void CheckAOTexture(PostProcessRenderContext context)
         {
-            bool AOUpdateNeeded = m_AmbientOnlyAO == null || !m_AmbientOnlyAO.IsCreated() || m_AmbientOnlyAO.width != context.width || m_AmbientOnlyAO.height != context.height;
+            int width = context.width / m_Settings.downscale;
+            int height = context.height / m_Settings.downscale;
+
+            bool AOUpdateNeeded = m_AmbientOnlyAO == null || !m_AmbientOnlyAO.IsCreated() || m_AmbientOnlyAO.width != width || m_AmbientOnlyAO.height != height;
 #if UNITY_2017_3_OR_NEWER
             AOUpdateNeeded = AOUpdateNeeded || m_AmbientOnlyAO.useDynamicScale != context.camera.allowDynamicResolution;
 #endif
@@ -557,7 +560,7 @@ namespace UnityEngine.Rendering.PostProcessing
             {
                 RuntimeUtilities.Destroy(m_AmbientOnlyAO);
 
-                m_AmbientOnlyAO = new RenderTexture(context.width, context.height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear)
+                m_AmbientOnlyAO = new RenderTexture(width, height, 0, RenderTextureFormat.R8, RenderTextureReadWrite.Linear)
                 {
                     hideFlags = HideFlags.DontSave,
                     filterMode = FilterMode.Point,

@@ -111,6 +111,9 @@ namespace UnityEngine.Rendering.PostProcessing
         [Range(1, 4)]
         public IntParameter maxDownsamples = new() { value = 4 };
 
+        [Range(1, 4)]
+        public IntParameter downscale = new() { value = 1 };
+
         // MSVO-only parameters
 
         /// <summary>
