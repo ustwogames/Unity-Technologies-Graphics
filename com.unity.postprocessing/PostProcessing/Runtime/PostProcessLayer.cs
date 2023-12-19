@@ -248,10 +248,14 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
 
             m_Camera.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, m_LegacyCmdBufferBeforeForwardOpaque);
+
+#if UNITY_EDITOR
+            // MV3: These command buffers are unnecessary except for AO debug visualisation, ditch them in builds
             m_Camera.AddCommandBuffer(CameraEvent.BeforeReflections, m_LegacyCmdBufferBeforeReflections);
             m_Camera.AddCommandBuffer(CameraEvent.BeforeLighting, m_LegacyCmdBufferBeforeLighting);
             m_Camera.AddCommandBuffer(CameraEvent.BeforeImageEffectsOpaque, m_LegacyCmdBufferOpaque);
             m_Camera.AddCommandBuffer(CameraEvent.BeforeImageEffects, m_LegacyCmdBuffer);
+#endif
 
             // Internal context used if no SRP is set
             m_CurrentContext = new PostProcessRenderContext();
