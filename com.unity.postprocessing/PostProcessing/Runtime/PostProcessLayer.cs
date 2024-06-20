@@ -197,7 +197,7 @@ namespace UnityEngine.Rendering.PostProcessing
         PropertySheetFactory m_PropertySheetFactory;
         CommandBuffer m_LegacyCmdBufferBeforeForwardOpaque;
 #if !UNITY_EDITOR
-       // New command buffer to control load/store actions for Camera.
+       // MV3: New command buffer to control load/store actions for Camera.
         CommandBuffer m_CmdBufferAfterAoBeforeForwardOpaque;
 #endif
         CommandBuffer m_LegacyCmdBufferBeforeReflections;
@@ -248,7 +248,7 @@ namespace UnityEngine.Rendering.PostProcessing
             m_LegacyCmdBuffer = new CommandBuffer { name = "Post-processing" };
             m_Camera = GetComponent<Camera>();
 #if !UNITY_EDITOR
-            // Adding this command buffer after Ambient Occlusion and Before ForwardOpaque to control load/store operations
+            // MV3: Adding this command buffer after Ambient Occlusion and Before ForwardOpaque to control load/store operations
             // This is mainly used to save memory bandwidth which is caused due to MSAA.
             // It resolves the MultiSampled(4x) Color attachment before storing to memory and don't store the Pre-Resolved
             // Color attachment which saves a lot of memory bandwidth and helps in low power consumption.
@@ -265,7 +265,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
 
             m_Camera.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, m_LegacyCmdBufferBeforeForwardOpaque);
-// Not adding m_CmdBufferAfterAoBeforeForwardOpaque in Editor mode as it is affecting the CameraEvent.BeforeImageEffectsOpaque
+// MV3: Not adding m_CmdBufferAfterAoBeforeForwardOpaque in Editor mode as it is affecting the CameraEvent.BeforeImageEffectsOpaque
 // which happens between Opaque and Transparent
 #if !UNITY_EDITOR
              m_Camera.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, m_CmdBufferAfterAoBeforeForwardOpaque );
@@ -414,6 +414,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 if (m_LegacyCmdBuffer != null)
                     m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffects, m_LegacyCmdBuffer);
 #if !UNITY_EDITOR
+                // MV3: Command buffer to control load/store operations
                if(m_CmdBufferAfterAoBeforeForwardOpaque != null)
                  m_Camera.RemoveCommandBuffer(CameraEvent.BeforeForwardOpaque, m_CmdBufferAfterAoBeforeForwardOpaque);
 #endif
@@ -626,6 +627,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.userData["AmbientOcclusionTexture"] = rt;
                 context.userData["BeforeForwardOpaqueCommand"] = context.command;
 #if !UNITY_EDITOR
+                // MV3: Adding m_CmdBufferAfterAoBeforeForwardOpaque after AO and before ForwardOpaque pass
                context.command = m_CmdBufferAfterAoBeforeForwardOpaque;
 #endif
             }
