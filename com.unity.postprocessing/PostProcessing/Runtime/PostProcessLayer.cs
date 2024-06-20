@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions;
+using LoadAction  = UnityEngine.Rendering.RenderBufferLoadAction;
+using StoreAction = UnityEngine.Rendering.RenderBufferStoreAction;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
@@ -194,6 +196,10 @@ namespace UnityEngine.Rendering.PostProcessing
 
         PropertySheetFactory m_PropertySheetFactory;
         CommandBuffer m_LegacyCmdBufferBeforeForwardOpaque;
+#if !UNITY_EDITOR
+       // New command buffer to control load/store actions for Camera.
+        CommandBuffer m_CmdBufferAfterAoBeforeForwardOpaque;
+#endif
         CommandBuffer m_LegacyCmdBufferBeforeReflections;
         CommandBuffer m_LegacyCmdBufferBeforeLighting;
         CommandBuffer m_LegacyCmdBufferOpaque;
@@ -240,14 +246,30 @@ namespace UnityEngine.Rendering.PostProcessing
             m_LegacyCmdBufferBeforeLighting = new CommandBuffer { name = "Ambient Occlusion Deferred (Composite)" };
             m_LegacyCmdBufferOpaque = new CommandBuffer { name = "Post-processing (Opaque Only)" };
             m_LegacyCmdBuffer = new CommandBuffer { name = "Post-processing" };
-
             m_Camera = GetComponent<Camera>();
-
+#if !UNITY_EDITOR
+            // Adding this command buffer after Ambient Occlusion and Before ForwardOpaque to control load/store operations
+            // This is mainly used to save memory bandwidth which is caused due to MSAA.
+            // It resolves the MultiSampled(4x) Color attachment before storing to memory and don't store the Pre-Resolved
+            // Color attachment which saves a lot of memory bandwidth and helps in low power consumption.
+            // Also it doesn't load/store depth attachment which is not necessary as we are using Camera depth texture
+            // to get the depth data.
+            m_CmdBufferAfterAoBeforeForwardOpaque = new CommandBuffer() { name = "After AO and Before ForwardOpaque" };
+            m_CmdBufferAfterAoBeforeForwardOpaque.SetRenderTargetWithLoadStoreAction(BuiltinRenderTextureType.CameraTarget,
+               RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Resolve,
+               RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+            m_CmdBufferAfterAoBeforeForwardOpaque.ClearRenderTarget(true, false, Color.clear, 1.0f);
+#endif
 #if !UNITY_2019_1_OR_NEWER // OnRenderImage (below) implies forceIntoRenderTexture
             m_Camera.forceIntoRenderTexture = true; // Needed when running Forward / LDR / No MSAA
 #endif
 
             m_Camera.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, m_LegacyCmdBufferBeforeForwardOpaque);
+// Not adding m_CmdBufferAfterAoBeforeForwardOpaque in Editor mode as it is affecting the CameraEvent.BeforeImageEffectsOpaque
+// which happens between Opaque and Transparent
+#if !UNITY_EDITOR
+             m_Camera.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, m_CmdBufferAfterAoBeforeForwardOpaque );
+#endif
 
 #if UNITY_EDITOR
             // MV3: These command buffers are unnecessary except for AO debug visualisation, ditch them in builds
@@ -391,6 +413,10 @@ namespace UnityEngine.Rendering.PostProcessing
                     m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffectsOpaque, m_LegacyCmdBufferOpaque);
                 if (m_LegacyCmdBuffer != null)
                     m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffects, m_LegacyCmdBuffer);
+#if !UNITY_EDITOR
+               if(m_CmdBufferAfterAoBeforeForwardOpaque != null)
+                 m_Camera.RemoveCommandBuffer(CameraEvent.BeforeForwardOpaque, m_CmdBufferAfterAoBeforeForwardOpaque);
+#endif
             }
 
             temporalAntialiasing.Release();
@@ -593,17 +619,15 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
             if (aoRenderBeforeForwardOpaqueOnly)
             {
-                CommandBuffer oldCommandBuffer = context.command;
-
                 context.command = m_LegacyCmdBufferBeforeForwardOpaque;
                 aoRenderer.Get().RenderAmbientOnly(context);
                 RenderTexture rt = aoRenderer.Get().GetResultTexture();
                 context.command.SetGlobalTexture(ShaderIDs.AmbientOcclusionTexture, rt);
-
                 context.userData["AmbientOcclusionTexture"] = rt;
                 context.userData["BeforeForwardOpaqueCommand"] = context.command;
-
-                context.command = oldCommandBuffer;
+#if !UNITY_EDITOR
+               context.command = m_CmdBufferAfterAoBeforeForwardOpaque;
+#endif
             }
             // Ambient-only AO is a special case and has to be done in separate command buffers
             else if (isAmbientOcclusionDeferred)
@@ -613,7 +637,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 // Render as soon as possible - should be done async in SRPs when available
                 context.command = m_LegacyCmdBufferBeforeReflections;
                 ao.RenderAmbientOnly(context);
-
                 // Composite with GBuffer right before the lighting pass
                 context.command = m_LegacyCmdBufferBeforeLighting;
                 ao.CompositeAmbientOnly(context);
