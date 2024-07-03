@@ -256,7 +256,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // to get the depth data.
             m_CmdBufferAfterAoBeforeForwardOpaque = new CommandBuffer() { name = "After AO and Before ForwardOpaque" };
             m_CmdBufferAfterAoBeforeForwardOpaque.SetRenderTargetWithLoadStoreAction(BuiltinRenderTextureType.CameraTarget,
-               RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Resolve,
+               RenderBufferLoadAction.Load, RenderBufferStoreAction.Resolve,
                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
             m_CmdBufferAfterAoBeforeForwardOpaque.ClearRenderTarget(true, false, Color.clear, 1.0f);
 #endif
