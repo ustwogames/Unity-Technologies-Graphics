@@ -244,7 +244,8 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             var camera = context.camera;
             return settings.renderBeforeOpaqueOnly.value
-                   && camera.actualRenderingPath == RenderingPath.Forward;
+                   && camera.actualRenderingPath == RenderingPath.Forward &&
+                   Shader.GetGlobalFloat("_DisableAO") == 0.0f;
         }
 
         public bool IsAmbientOnly(PostProcessRenderContext context)
