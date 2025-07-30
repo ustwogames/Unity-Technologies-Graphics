@@ -604,6 +604,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var aoRenderer = aoBundle.CastRenderer<AmbientOcclusionRenderer>();
 
             bool aoSupported = aoSettings.IsEnabledAndSupported(context);
+            // Check if we RenderBeforeOpaque enabled
             bool aoRenderBeforeForwardOpaqueOnly = aoRenderer.IsRenderBeforeForwardOpaqueOnly(context);
             bool aoAmbientOnly = aoRenderer.IsAmbientOnly(context);
             bool isAmbientOcclusionDeferred = aoSupported && aoAmbientOnly;
