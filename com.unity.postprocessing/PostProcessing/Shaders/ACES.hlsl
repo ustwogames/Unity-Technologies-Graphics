@@ -219,8 +219,11 @@ half3 ACES_to_ACEScc(half3 x)
 {
     x = clamp(x, 0.0, HALF_MAX);
 
-    // x is clamped to [0, HALF_MAX], skip the <= 0 check
-    return (x < 0.00003051757) ? (log2(0.00001525878 + x * 0.5) + 9.72) / 17.52 : (log2(x) + 9.72) / 17.52;
+    half3 mask = step(x, 0.00003051757); // 1 if x ≤ threshold
+    half3 below = (log2(0.00001525878 + x * 0.5) + 9.72) / 17.52;
+    half3 above = (log2(x) + 9.72) / 17.52;
+
+    return lerp(above, below, mask); // mix(above, below, mask) in GLSL
 
     /*
     return half3(
@@ -678,7 +681,11 @@ half roll_white_fwd(
 
 half3 linear_to_sRGB(half3 x)
 {
-    return (x <= 0.0031308 ? (x * 12.9232102) : 1.055 * pow(x, 1.0 / 2.4) - 0.055);
+    half3 linearPart = x * 12.9232102h;
+    half3 gammaPart = 1.055h * pow(x, 1.0h / 2.4h) - 0.055h;
+
+    bool3 condition = x <= 0.0031308h;
+    return lerp(gammaPart, linearPart, (half3)condition);
 }
 
 half3 linear_to_bt1886(half3 x, half gamma, half Lw, half Lb)

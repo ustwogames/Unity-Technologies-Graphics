@@ -179,8 +179,11 @@ half3 SRGBToLinear(half3 c)
 #else
     half3 linearRGBLo = c / 12.92;
     half3 linearRGBHi = PositivePow((c + 0.055) / 1.055, half3(2.4, 2.4, 2.4));
-    half3 linearRGB = (c <= 0.04045) ? linearRGBLo : linearRGBHi;
-    return linearRGB;
+    // Create mask where c <= 0.04045
+    bool3 condition = c <= 0.04045h;
+
+    // Blend based on condition
+    return lerp(linearRGBHi, linearRGBLo, (half3)condition);
 #endif
 }
 
@@ -212,8 +215,9 @@ half3 LinearToSRGB(half3 c)
 #else
     half3 sRGBLo = c * 12.92;
     half3 sRGBHi = (PositivePow(c, half3(1.0 / 2.4, 1.0 / 2.4, 1.0 / 2.4)) * 1.055) - 0.055;
-    half3 sRGB = (c <= 0.0031308) ? sRGBLo : sRGBHi;
-    return sRGB;
+
+    bool3 condition = c <= 0.0031308h;
+    return lerp(sRGBHi, sRGBLo, (half3)condition);
 #endif
 }
 
