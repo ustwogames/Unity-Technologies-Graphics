@@ -346,9 +346,9 @@ namespace UnityEngine.Rendering.PostProcessing
 
             cmd.SetComputeTextureParam(cs, kernel, "LinearZ", ShaderIDs.LinearDepth);
             cmd.SetComputeTextureParam(cs, kernel, "DS2x", ShaderIDs.LowDepth1);
-            ConditionalSetComputeTextureParam(m_Settings, cmd, cs, kernel, "DS4x", ShaderIDs.LowDepth2, 2);
+            cmd.SetComputeTextureParam(cs, kernel, "DS4x", ShaderIDs.LowDepth2);
             cmd.SetComputeTextureParam(cs, kernel, "DS2xAtlas", ShaderIDs.TiledDepth1);
-            ConditionalSetComputeTextureParam(m_Settings, cmd, cs, kernel, "DS4xAtlas", ShaderIDs.TiledDepth2, 2);
+            cmd.SetComputeTextureParam(cs, kernel, "DS4xAtlas", ShaderIDs.TiledDepth2);
             cmd.SetComputeVectorParam(cs, "ProjectionParams", CalculateProjectionParams(camera));
             cmd.SetComputeVectorParam(cs, "OrthoParams", CalculateOrthoParams(camera));
             cmd.SetComputeVectorParam(cs, "ZBufferParams", CalculateZBufferParams(camera));
@@ -358,26 +358,34 @@ namespace UnityEngine.Rendering.PostProcessing
 
             if (needDepthMapRelease)
                 Release(cmd, ShaderIDs.DepthCopy);
+            cs = m_Resources.computeShaders.multiScaleAODownsample2;
 
             // 2nd downsampling pass.
-            cs = m_Resources.computeShaders.multiScaleAODownsample2;
-            kernel = isMSAA ? cs.FindKernel("MultiScaleVODownsample2_MSAA") : cs.FindKernel("MultiScaleVODownsample2");
-
-            ConditionalSetComputeTextureParam(m_Settings, cmd, cs, kernel, "DS4x", ShaderIDs.LowDepth2, 2);
-            ConditionalSetComputeTextureParam(m_Settings, cmd, cs, kernel, "DS8x", ShaderIDs.LowDepth3, 3);
-            ConditionalSetComputeTextureParam(m_Settings, cmd, cs, kernel, "DS16x", ShaderIDs.LowDepth4, 4);
-            ConditionalSetComputeTextureParam(m_Settings, cmd, cs, kernel, "DS8xAtlas", ShaderIDs.TiledDepth3, 3);
-            ConditionalSetComputeTextureParam(m_Settings, cmd, cs, kernel, "DS16xAtlas", ShaderIDs.TiledDepth4, 4);
+            switch (m_Settings.maxDownsamples)
+            {
+                case 2:
+                    kernel = isMSAA ? cs.FindKernel("MultiScaleVODownsample2_DownSample2_MSAA") : cs.FindKernel("MultiScaleVODownsample2_DownSample2");
+                    cmd.SetComputeTextureParam(cs, kernel, "DS4x", ShaderIDs.LowDepth2);
+                    break;
+                case 3:
+                    kernel = isMSAA ? cs.FindKernel("MultiScaleVODownsample2_DownSample3_MSAA") : cs.FindKernel("MultiScaleVODownsample2_DownSample3");
+                    cmd.SetComputeTextureParam(cs, kernel, "DS4x", ShaderIDs.LowDepth2);
+                    cmd.SetComputeTextureParam(cs, kernel, "DS8x", ShaderIDs.LowDepth3);
+                    cmd.SetComputeTextureParam(cs, kernel, "DS8xAtlas", ShaderIDs.TiledDepth3);
+                    break;
+                case 4:
+                    kernel = isMSAA ? cs.FindKernel("MultiScaleVODownsample2_DownSample4_MSAA") : cs.FindKernel("MultiScaleVODownsample2_DownSample4");
+                    cmd.SetComputeTextureParam(cs, kernel, "DS4x", ShaderIDs.LowDepth2);
+                    cmd.SetComputeTextureParam(cs, kernel, "DS8x", ShaderIDs.LowDepth3);
+                    cmd.SetComputeTextureParam(cs, kernel, "DS16x", ShaderIDs.LowDepth4);
+                    cmd.SetComputeTextureParam(cs, kernel, "DS8xAtlas", ShaderIDs.TiledDepth3);
+                    cmd.SetComputeTextureParam(cs, kernel, "DS16xAtlas", ShaderIDs.TiledDepth4);
+                    break;
+                default:
+                    break;
+            }
 
             cmd.DispatchCompute(cs, kernel, m_ScaledWidths[(int)MipLevel.L6], m_ScaledHeights[(int)MipLevel.L6], 1);
-
-            static void ConditionalSetComputeTextureParam(AmbientOcclusion settings, CommandBuffer cmd, ComputeShader cs, int kernel, string name, RenderTargetIdentifier rt, int downsampleLevel)
-            {
-                if (settings.maxDownsamples >= downsampleLevel)
-                {
-                    cmd.SetComputeTextureParam(cs, kernel, name, rt);
-                }
-            }
         }
 
         void PushRenderCommands(CommandBuffer cmd, int source, int destination, Vector3 sourceSize, float tanHalfFovH, bool isMSAA, bool isOrtho)

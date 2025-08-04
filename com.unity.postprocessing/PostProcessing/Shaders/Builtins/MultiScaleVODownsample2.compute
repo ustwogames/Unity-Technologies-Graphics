@@ -21,11 +21,10 @@
 
 #pragma warning(disable : 3568)
 #pragma exclude_renderers gles gles3 d3d11_9x
-
-#pragma kernel MultiScaleVODownsample2              main=MultiScaleVODownsample2
-#pragma kernel MultiScaleVODownsample2_MSAA         main=MultiScaleVODownsample2_MSAA       MSAA
-
 #include "Packages/com.unity.postprocessing/PostProcessing/Shaders/StdLib.hlsl"
+
+#pragma kernel MultiScaleVODownsample2_DownSample2              DownSample2=MultiScaleVODownsample2_DownSample2
+#pragma kernel MultiScaleVODownsample2_DownSample2_MSAA         DownSample2=MultiScaleVODownsample2_DownSample2_MSAA       MSAA
 
 #ifdef MSAA
 Texture2D<float2> DS4x;
@@ -41,6 +40,26 @@ RWTexture2D<float> DS16x;
 RWTexture2DArray<float> DS16xAtlas;
 #endif
 
+#ifdef DISABLE_COMPUTE_SHADERS
+
+TRIVIAL_COMPUTE_KERNEL(main)
+
+#else
+
+[numthreads(8, 8, 1)]
+void DownSample2(uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID)
+{
+    #ifdef MSAA
+    float2 m1 = DS4x[DTid.xy << 1];
+    #else
+    float m1 = DS4x[DTid.xy << 1];
+    #endif
+}
+
+#endif // DISABLE_COMPUTE_SHADERS
+
+#pragma kernel MultiScaleVODownsample2_DownSample3              DownSample3=MultiScaleVODownsample2_DownSample3
+#pragma kernel MultiScaleVODownsample2_DownSample3_MSAA         DownSample3=MultiScaleVODownsample2_DownSample3_MSAA       MSAA
 
 #ifdef DISABLE_COMPUTE_SHADERS
 
@@ -49,7 +68,35 @@ TRIVIAL_COMPUTE_KERNEL(main)
 #else
 
 [numthreads(8, 8, 1)]
-void main(uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID)
+void DownSample3(uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID)
+{
+    #ifdef MSAA
+    float2 m1 = DS4x[DTid.xy << 1];
+    #else
+    float m1 = DS4x[DTid.xy << 1];
+    #endif
+
+    uint2 st = DTid.xy;
+    uint2 stAtlas = st >> 2;
+    uint stSlice = ((st.x & 3) | (st.y << 2)) & 15;
+
+    DS8x[st] = m1;
+    DS8xAtlas[uint3(stAtlas, stSlice)] = m1;
+}
+
+#endif // DISABLE_COMPUTE_SHADERS
+
+#pragma kernel MultiScaleVODownsample2_DownSample4              DownSample4=MultiScaleVODownsample2_DownSample4
+#pragma kernel MultiScaleVODownsample2_DownSample4_MSAA         DownSample4=MultiScaleVODownsample2_DownSample4_MSAA       MSAA
+
+#ifdef DISABLE_COMPUTE_SHADERS
+
+TRIVIAL_COMPUTE_KERNEL(main)
+
+#else
+
+[numthreads(8, 8, 1)]
+void DownSample4(uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID)
 {
     #ifdef MSAA
     float2 m1 = DS4x[DTid.xy << 1];
