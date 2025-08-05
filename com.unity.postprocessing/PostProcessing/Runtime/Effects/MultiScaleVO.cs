@@ -361,6 +361,8 @@ namespace UnityEngine.Rendering.PostProcessing
             cs = m_Resources.computeShaders.multiScaleAODownsample2;
 
             // 2nd downsampling pass.
+            // Initialize texture sources for compute shader based on the MaxDownsamples and execute the particular compute shader based on the allocated
+            // resources. This should improve the performance and reduce the memory usage
             switch (m_Settings.maxDownsamples)
             {
                 case 2:
