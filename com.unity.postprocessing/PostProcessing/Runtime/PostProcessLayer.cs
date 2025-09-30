@@ -256,9 +256,9 @@ namespace UnityEngine.Rendering.PostProcessing
             // to get the depth data.
             m_CmdBufferAfterAoBeforeForwardOpaque = new CommandBuffer() { name = "After AO and Before ForwardOpaque" };
             m_CmdBufferAfterAoBeforeForwardOpaque.SetRenderTargetWithLoadStoreAction(BuiltinRenderTextureType.CameraTarget,
-               RenderBufferLoadAction.Load, RenderBufferStoreAction.Resolve,
+               RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Resolve,
                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-            m_CmdBufferAfterAoBeforeForwardOpaque.ClearRenderTarget(true, false, Color.clear, 1.0f);
+            m_CmdBufferAfterAoBeforeForwardOpaque.ClearRenderTarget(true, true, Color.clear, 1.0f);
 #endif
 #if !UNITY_2019_1_OR_NEWER // OnRenderImage (below) implies forceIntoRenderTexture
             m_Camera.forceIntoRenderTexture = true; // Needed when running Forward / LDR / No MSAA
