@@ -254,11 +254,12 @@ namespace UnityEngine.Rendering.PostProcessing
             // Color attachment which saves a lot of memory bandwidth and helps in low power consumption.
             // Also it doesn't load/store depth attachment which is not necessary as we are using Camera depth texture
             // to get the depth data.
+            Color cameraBackground = m_Camera.backgroundColor;
             m_CmdBufferAfterAoBeforeForwardOpaque = new CommandBuffer() { name = "After AO and Before ForwardOpaque" };
             m_CmdBufferAfterAoBeforeForwardOpaque.SetRenderTargetWithLoadStoreAction(BuiltinRenderTextureType.CameraTarget,
                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Resolve,
                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-            m_CmdBufferAfterAoBeforeForwardOpaque.ClearRenderTarget(true, true, Color.clear, 1.0f);
+            m_CmdBufferAfterAoBeforeForwardOpaque.ClearRenderTarget(true, true, cameraBackground, 1.0f);
 #endif
 #if !UNITY_2019_1_OR_NEWER // OnRenderImage (below) implies forceIntoRenderTexture
             m_Camera.forceIntoRenderTexture = true; // Needed when running Forward / LDR / No MSAA
