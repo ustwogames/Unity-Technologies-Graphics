@@ -373,6 +373,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
             static void ConditionalSetComputeTextureParam(AmbientOcclusion settings, CommandBuffer cmd, ComputeShader cs, int kernel, string name, RenderTargetIdentifier rt, int downsampleLevel)
             {
+                Debug.Assert(settings.maxDownsamples == 4, "[MV3-Note] Using maxDownsamples < 4 causes a crash on PS5 release builds. This needs fixing before we can use this setting; as a work-around try adjusting intensity instead to adjust brightness.");
+
                 if (settings.maxDownsamples >= downsampleLevel)
                 {
                     cmd.SetComputeTextureParam(cs, kernel, name, rt);
